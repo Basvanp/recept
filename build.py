@@ -186,8 +186,8 @@ EXTRA_VOEDING = [
         "macros": [],
         "meals": [
             {
-                "num": 3,
-                "title": "Avond · tonijnsalade",
+                "num": 2,
+                "title": "middag · tonijnsalade",
                 "items": [
                     {"product": "tonijn, eigen nat", "note": "uitgelekt gewicht", "qty": 120, "unit": "g", "kcal": 135, "e": 32, "k": 0, "v": 1},
                     {"product": "mayonaise 50%", "note": "1,5 lepel", "qty": 2, "unit": "el", "kcal": 147, "e": 3, "k": 0, "v": 15},
