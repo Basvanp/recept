@@ -117,7 +117,7 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
 .week .d.sel{background:#fff; box-shadow:0 1px 3px rgba(60,50,30,.12)}
 .week .d.today .dl{color:var(--accent)}
 .week .dl{display:block; font-size:10px; font-weight:700; color:var(--muted); text-transform:lowercase}
-.week .dv{display:block; font-size:12px; font-weight:750; margin-top:1px}
+.week .dv{display:block; font-size:11px; font-weight:750; margin-top:1px; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
 .week .d.hi .dv{color:#b42318}
 .week .d.ok .dv{color:var(--accent)}
 
@@ -405,7 +405,7 @@ function updateTally() {
       k != null && k > DAY_KCAL ? 'hi' : '',
       k != null && k > 0 && k <= DAY_KCAL ? 'ok' : '',
     ].filter(Boolean).join(' ');
-    return `<div class="d ${cls}" data-iso="${iso}"><span class="dl">${DAYS[dt.getDay()]}</span><span class="dv">${k == null ? '–' : fmt(Math.round(k/100)/10, 1)}</span></div>`;
+    return `<div class="d ${cls}" data-iso="${iso}"><span class="dl">${DAYS[dt.getDay()]}</span><span class="dv">${k == null ? '–' : fmt(k, 0)}</span></div>`;
   }).join('');
   updateEatenPanel();
 }
