@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="Recept — 3 schema’s, 1.900 kcal, iPhone-first" width="920">
+  <img src="docs/banner.png" alt="Recept — 3 schemas, 1.900 kcal, iPhone-first" width="920">
 </p>
 
 <p align="center">
