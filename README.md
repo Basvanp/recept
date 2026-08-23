@@ -70,6 +70,8 @@ flowchart TD
 | **1** | 1.904 | omelet | cracker caprese | kipkerrie + bonen | kwark | cashew + banaan |
 | **2** | 1.902 | brood + pindakaas | crackers zalm/pesto | pita kip | protein pudding | dadel + appel |
 | **3** | 1.902 | kwark + haver | shakshuka | wraps | kwark | framboos + cashew |
+| **4** | — | | | tonijnsalade (513) | | |
+| **5** | — | | | pasta zalm/spinazie (732) | | |
 
 ```
 koolhydraten ████████████████████░░░░░░░░░░  50%

@@ -178,13 +178,63 @@ def parse_calorie_table(rows):
     return items
 
 
+# Extra diners die niet in de sheet staan — blijven bij rebuild behouden.
+EXTRA_VOEDING = [
+    {
+        "name": "Schema 4",
+        "kcal": 513,
+        "macros": [],
+        "meals": [
+            {
+                "num": 3,
+                "title": "Avond · tonijnsalade",
+                "items": [
+                    {"product": "tonijn, eigen nat", "note": "uitgelekt gewicht", "qty": 120, "unit": "g", "kcal": 135, "e": 32, "k": 0, "v": 1},
+                    {"product": "mayonaise 50%", "note": "1,5 lepel", "qty": 2, "unit": "el", "kcal": 147, "e": 3, "k": 0, "v": 15},
+                    {"product": "mosterd (devos lemmens)", "note": "", "qty": 5, "unit": "g", "kcal": 6, "e": 0, "k": 0, "v": 0},
+                    {"product": "augurken", "note": "gesnipperd", "qty": 15, "unit": "g", "kcal": 3, "e": 0, "k": 1, "v": 0},
+                    {"product": "brood (volkoren)", "note": "", "qty": 100, "unit": "g", "kcal": 208, "e": 6, "k": 40, "v": 3},
+                    {"product": "sjalot", "note": "gesnipperd", "qty": 20, "unit": "g", "kcal": 15, "e": 0, "k": 3, "v": 0},
+                ],
+                "total": {"kcal": 513, "e": 42, "k": 41, "v": 19},
+                "energyPct": {"e": "33%", "k": "33%", "v": "34%"},
+            }
+        ],
+    },
+    {
+        "name": "Schema 5",
+        "kcal": 732,
+        "macros": [],
+        "meals": [
+            {
+                "num": 3,
+                "title": "Avond · pasta met zalm en spinazie",
+                "items": [
+                    {"product": "tagliatelle", "note": "ongekookt", "qty": 75, "unit": "g", "kcal": 280, "e": 11, "k": 53, "v": 3},
+                    {"product": "kookroom light", "note": "", "qty": 65, "unit": "ml", "kcal": 68, "e": 2, "k": 4, "v": 5},
+                    {"product": "spinazie", "note": "vers", "qty": 100, "unit": "g", "kcal": 24, "e": 3, "k": 3, "v": 0},
+                    {"product": "zalmfilet", "note": "", "qty": 100, "unit": "g", "kcal": 224, "e": 20, "k": 0, "v": 16},
+                    {"product": "ui", "note": "¼ ui", "qty": 25, "unit": "g", "kcal": 11, "e": 0, "k": 3, "v": 0},
+                    {"product": "tomaten", "note": "cherry", "qty": 60, "unit": "g", "kcal": 10, "e": 1, "k": 2, "v": 0},
+                    {"product": "pijnboompitten", "note": "", "qty": 10, "unit": "g", "kcal": 67, "e": 1, "k": 2, "v": 6},
+                    {"product": "knoflook", "note": "", "qty": 0.5, "unit": "teentje", "kcal": 7, "e": 0, "k": 0, "v": 1},
+                    {"product": "olijfolie", "note": "", "qty": 5, "unit": "mL", "kcal": 41, "e": 0, "k": 0, "v": 5},
+                ],
+                "total": {"kcal": 732, "e": 38, "k": 67, "v": 36},
+                "energyPct": {"e": "20%", "k": "36%", "v": "44%"},
+            }
+        ],
+    },
+]
+
+
 def main():
     base = Path(__file__).parent
     sheets = read_sheets(base / ODS_FILE)
     data = {
         "voeding": [
             parse_voeding(sheets.get(f"VOEDING {i}", []), f"Schema {i}") for i in (1, 2, 3)
-        ],
+        ] + EXTRA_VOEDING,
         "calorieTable": parse_calorie_table(sheets.get("Calorietabel", [])),
     }
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
