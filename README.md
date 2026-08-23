@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Recept — 3 schemas, 1.900 kcal, iPhone-first" width="920">
+  <img src="docs/banner.png" alt="Marthes' recepten — compensatie, maaltijden en weekoverzicht" width="920">
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@ Mobiele recepten-app: vink wat je eet, zie wat er overblijft, en compenseer gist
 ## Dagindeling
 
 ```
-  Ontbijt → Tussendoor → Lunch → Tussendoor → Diner → Toetje
+  Ontbijt → Tussen → Lunch → Tussen → Diner → Toetje
      ①           ⑤          ②          ⑤         ③        ④
 ```
 
@@ -23,9 +23,9 @@ Drie schema’s per maaltijd. De twee tussendoortjes delen dezelfde recepten, ma
 
 ```mermaid
 flowchart LR
-  A[Ontbijt] --> B[Tussendoor]
+  A[Ontbijt] --> B[Tussen]
   B --> C[Lunch]
-  C --> D[Tussendoor]
+  C --> D[Tussen]
   D --> E[Diner]
   E --> F[Toetje]
   F --> G[Weektotaal]
