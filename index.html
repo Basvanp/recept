@@ -95,7 +95,7 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
 .meal.started tr.item.off .name{text-decoration:line-through}
 .meal td{padding:11px 12px 11px 0; border-top:1px solid var(--hair); vertical-align:middle}
 .meal td:last-child{padding-right:16px}
-.meal td.box{width:1%; padding:11px 10px 11px 16px}
+.meal td.box{width:1%; padding:11px 10px 11px 16px; position:relative}
 .boxmark{display:block; width:22px; height:22px; border:1.6px solid #c9c2b4; border-radius:6px; background:#fff}
 .meal tr.item.on .boxmark{background:var(--accent); border-color:var(--accent);
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.2 6.6 11.2 12.5 4.8'/%3E%3C/svg%3E")}
@@ -156,14 +156,9 @@ nav button{
 nav button svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
 nav button.active{color:var(--accent)}
 
-.haptic-armed .haptic-hit,
-.haptic-armed .haptic-cover{
+.haptic-armed .haptic-hit{
   position:absolute; inset:0; width:100%; height:100%;
   opacity:0; margin:0; z-index:2; cursor:pointer;
-}
-.haptic-armed .haptic-input{
-  position:absolute; width:1px; height:1px; opacity:0;
-  pointer-events:none; margin:0; padding:0;
 }
 </style>
 </head>
@@ -222,6 +217,30 @@ function buzz() {
 function bindHaptic(el, fn) {
   if (!el || el.dataset.haptic) return;
   el.dataset.haptic = '1';
+  if (el.tagName === 'TR') {
+    el.addEventListener('click', e => {
+      if (e.target.closest('.haptic-hit')) return;
+      if (IS_ANDROID) buzz();
+      fn(e);
+    });
+    if (IS_IOS) {
+      const box = el.querySelector('td.box');
+      if (!box) return;
+      box.classList.add('haptic-armed');
+      const hit = document.createElement('input');
+      hit.type = 'checkbox';
+      hit.setAttribute('switch', '');
+      hit.className = 'haptic-hit';
+      hit.setAttribute('aria-hidden', 'true');
+      hit.tabIndex = -1;
+      hit.addEventListener('change', () => {
+        hit.checked = false;
+        fn();
+      });
+      box.prepend(hit);
+    }
+    return;
+  }
   if (IS_ANDROID) {
     el.addEventListener('click', e => { buzz(); fn(e); });
     return;
@@ -231,28 +250,6 @@ function bindHaptic(el, fn) {
     return;
   }
   el.classList.add('haptic-armed');
-  const id = 'h' + Math.random().toString(36).slice(2, 9);
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.setAttribute('switch', '');
-  input.id = id;
-  input.className = 'haptic-input';
-  input.setAttribute('aria-hidden', 'true');
-  input.tabIndex = -1;
-  if (el.tagName === 'TR') {
-    const label = document.createElement('label');
-    label.className = 'haptic-cover';
-    label.htmlFor = id;
-    label.setAttribute('aria-hidden', 'true');
-    input.addEventListener('change', () => {
-      input.checked = false;
-      fn();
-    });
-    const host = el.querySelector('td') || el;
-    host.prepend(label);
-    host.prepend(input);
-    return;
-  }
   const hit = document.createElement('input');
   hit.type = 'checkbox';
   hit.setAttribute('switch', '');
