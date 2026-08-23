@@ -1,6 +1,5 @@
-node_modules/
+node_modules
 *.ods
-.DS_Store
-.vercel
 package.json
 package-lock.json
+build.py
