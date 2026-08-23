@@ -28,18 +28,13 @@ main{max-width:560px; margin:0 auto; padding:calc(18px + env(safe-area-inset-top
 .page.active{display:block}
 
 h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
-.banner{
-  background:var(--card); border:1px solid var(--line); border-radius:14px;
-  padding:14px 16px 0; margin:0 0 14px;
-  box-shadow:0 2px 8px rgba(60,50,30,.06);
-}
 .hero{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
 .hero button{border:0; background:none; color:var(--muted); font:inherit; font-size:14px; font-weight:600; padding:4px 0}
 .stat{font-weight:750; font-size:16px; margin:6px 0 2px; font-variant-numeric:tabular-nums}
 .stat .left{color:var(--accent)}
 .stat .left.over{color:#b42318}
-.comp{font-size:12.5px; color:var(--muted); margin:0 0 10px}
-.comp:empty{display:none; margin:0 0 10px}
+.comp{font-size:12.5px; color:var(--muted); margin:0 0 14px}
+.comp:empty{display:none; margin:0}
 .sub{color:var(--muted); font-size:14.5px; margin:2px 0 16px}
 
 .eaten{margin:0 0 12px}
@@ -74,11 +69,6 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
   font-size:12.5px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums}
 
 /* segmented control */
-.banner .segwrap{
-  position:sticky; top:0; z-index:10;
-  margin:0 -16px; padding:10px 16px 12px;
-  background:var(--card); border-radius:0 0 14px 14px;
-}
 .segwrap{position:sticky; top:0; z-index:10; padding:8px 0 14px; margin:0 -16px; padding-left:16px; padding-right:16px;
   background:rgba(247,245,240,.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
 .seg{display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:1px}
@@ -170,15 +160,12 @@ nav button.active{color:var(--accent)}
 
 <main>
   <section class="page active" id="page-food">
-    <div class="banner">
-      <div class="hero">
-        <h1>Marthes' recepten</h1>
-        <button type="button" id="tally-reset">wissen</button>
-      </div>
-      <p class="stat" id="tally-stat"><span id="tally-when"></span><span id="tally-used">0</span> / <span id="tally-goal">1.900</span> · <span class="left" id="tally-left">1.900 over</span></p>
-      <p class="comp" id="tally-comp"></p>
-      <div class="segwrap"><div class="seg" id="meal-seg"></div></div>
+    <div class="hero">
+      <h1>Marthes' recepten</h1>
+      <button type="button" id="tally-reset">wissen</button>
     </div>
+    <p class="stat" id="tally-stat"><span id="tally-when"></span><span id="tally-used">0</span> / <span id="tally-goal">1.900</span> · <span class="left" id="tally-left">1.900 over</span></p>
+    <p class="comp" id="tally-comp"></p>
     <details class="eaten" id="eaten-panel" open>
       <summary><span id="eaten-title">Vandaag gegeten</span> · <span class="subtot" id="eaten-total"></span></summary>
       <div class="eaten-body" id="eaten-body"></div>
@@ -481,12 +468,12 @@ function renderFood() {
     </div>`;
   }).join('');
   $('#food-body').innerHTML = `
+    <div class="segwrap"><div class="seg">${seg}</div></div>
     ${cards}
     <p class="tip">Vink aan wat je eet. Wat je overslaat telt niet mee — dat zie je als over.</p>`;
-  $('#meal-seg').innerHTML = seg;
-  $('#meal-seg').querySelectorAll('button').forEach(b =>
+  $('#food-body').querySelectorAll('.seg button').forEach(b =>
     b.addEventListener('click', () => { curMeal = +b.dataset.i; renderFood(); window.scrollTo({top:0}); }));
-  const activeChip = $('#meal-seg').querySelector('button.active');
+  const activeChip = $('#food-body').querySelector('.seg button.active');
   if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
   $('#food-body').querySelectorAll('.meal').forEach(card => {
     updateMealCard(card);
