@@ -75,8 +75,9 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
   font-variant-numeric:tabular-nums;
 }
 .week{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:8px}
-.week .d{text-align:center; padding:4px 0; border-radius:8px}
-.week .d.today{background:#fff; box-shadow:0 1px 3px rgba(60,50,30,.12)}
+.week .d{text-align:center; padding:8px 0; border-radius:8px; cursor:pointer; -webkit-user-select:none; user-select:none}
+.week .d.sel{background:#fff; box-shadow:0 1px 3px rgba(60,50,30,.12)}
+.week .d.today .dl{color:var(--accent)}
 .week .dl{display:block; font-size:10px; font-weight:700; color:var(--muted); text-transform:lowercase}
 .week .dv{display:block; font-size:12px; font-weight:750; margin-top:1px}
 .week .d.hi .dv{color:#b42318}
@@ -215,11 +216,23 @@ function saveWeek() {
 
 const week = loadWeek();
 const TODAY = isoDate();
-if (!week[TODAY]) week[TODAY] = {};
-let eaten = week[TODAY];
+const MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+let viewIso = TODAY;
+if (!week[viewIso]) week[viewIso] = {};
+let eaten = week[viewIso];
+function setView(iso) {
+  viewIso = iso;
+  if (!week[viewIso]) week[viewIso] = {};
+  eaten = week[viewIso];
+}
 function saveEaten() {
-  week[TODAY] = eaten;
+  week[viewIso] = eaten;
   saveWeek();
+}
+function dayLabel(iso) {
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${DAYS[dt.getDay()]} ${d} ${MONTHS[m - 1]}`;
 }
 const itemKey = (schema, num, i, slot) => `${slot}-${schema}-${num}-${i}`;
 
@@ -249,37 +262,43 @@ function dayLogged(map) {
   return map && Object.keys(map).length > 0;
 }
 
-function todayTarget() {
-  const ymap = week[shiftIso(TODAY, -1)];
+function dayTarget(iso) {
+  const ymap = week[shiftIso(iso, -1)];
   if (!dayLogged(ymap)) return DAY_KCAL;
   return DAY_KCAL - (dayKcal(ymap) - DAY_KCAL);
 }
 
 function updateTally() {
   const used = dayKcal(eaten);
-  const target = todayTarget();
+  const target = dayTarget(viewIso);
   const left = target - used;
   $('#tally-used').textContent = `${fmt(used, 0)} kcal gegeten`;
   const el = $('#tally-left');
   if (left >= 0) { el.textContent = `${fmt(left, 0)} over`; el.classList.remove('over'); }
   else { el.textContent = `${fmt(-left, 0)} te veel`; el.classList.add('over'); }
 
-  const yiso = shiftIso(TODAY, -1);
+  const yiso = shiftIso(viewIso, -1);
   const ymap = week[yiso];
   const comp = $('#tally-comp');
+  const here = viewIso === TODAY ? 'vandaag' : dayLabel(viewIso);
   if (dayLogged(ymap)) {
     const y = dayKcal(ymap);
     const d = y - DAY_KCAL;
     const word = d > 0 ? `${fmt(d, 0)} te veel` : d < 0 ? `${fmt(-d, 0)} onder` : 'op doel';
-    comp.textContent = `Gisteren ${fmt(y, 0)} · ${word} → vandaag ${fmt(target, 0)}`;
+    comp.textContent = `${dayLabel(yiso)} ${fmt(y, 0)} · ${word} → ${here} ${fmt(target, 0)}`;
   } else {
-    comp.textContent = 'Nog geen gisteren — doel 1.900';
+    comp.textContent = viewIso === TODAY
+      ? 'Nog geen gisteren — doel 1.900'
+      : `${dayLabel(viewIso)} · doel 1.900`;
   }
 
   const sub = $('#food-sub');
-  if (sub) sub.textContent = target === DAY_KCAL
-    ? '1.900 kcal per dag'
-    : `Vandaag ${fmt(target, 0)} kcal (1.900 ± gisteren)`;
+  if (sub) {
+    const when = viewIso === TODAY ? 'Vandaag' : dayLabel(viewIso);
+    sub.textContent = target === DAY_KCAL
+      ? `${when} · 1.900 kcal`
+      : `${when} · ${fmt(target, 0)} kcal (1.900 ± dag ervoor)`;
+  }
 
   $('#week').innerHTML = lastDays(7).map(iso => {
     const [y,m,d] = iso.split('-').map(Number);
@@ -288,11 +307,12 @@ function updateTally() {
     const logged = dayLogged(map);
     const k = logged ? dayKcal(map) : null;
     const cls = [
+      iso === viewIso ? 'sel' : '',
       iso === TODAY ? 'today' : '',
       k != null && k > DAY_KCAL ? 'hi' : '',
       k != null && k > 0 && k <= DAY_KCAL ? 'ok' : '',
     ].filter(Boolean).join(' ');
-    return `<div class="d ${cls}"><span class="dl">${DAYS[dt.getDay()]}</span><span class="dv">${k == null ? '–' : fmt(Math.round(k/100)/10, 1)}</span></div>`;
+    return `<div class="d ${cls}" data-iso="${iso}"><span class="dl">${DAYS[dt.getDay()]}</span><span class="dv">${k == null ? '–' : fmt(Math.round(k/100)/10, 1)}</span></div>`;
   }).join('');
 }
 
@@ -405,6 +425,13 @@ document.querySelectorAll('nav button').forEach(btn => {
     $('#page-' + btn.dataset.page).classList.add('active');
     window.scrollTo({top: 0});
   });
+});
+
+$('#week').addEventListener('click', e => {
+  const cell = e.target.closest('.d');
+  if (!cell || !cell.dataset.iso || cell.dataset.iso === viewIso) return;
+  setView(cell.dataset.iso);
+  renderFood();
 });
 
 $('#tally-reset').addEventListener('click', () => {
