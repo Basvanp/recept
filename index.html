@@ -37,6 +37,37 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
 .comp:empty{display:none; margin:0}
 .sub{color:var(--muted); font-size:14.5px; margin:2px 0 16px}
 
+.eaten{margin:0 0 12px}
+.eaten:not(.has){display:none}
+.eaten > summary{
+  list-style:none; cursor:pointer; user-select:none; -webkit-user-select:none;
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 16px; font-weight:750; font-size:15px;
+  box-shadow:0 1px 2px rgba(60,50,30,.04);
+}
+.eaten > summary::-webkit-details-marker{display:none}
+.eaten > summary::after{
+  content:'›'; float:right; color:var(--muted); font-size:18px; line-height:1;
+  transform:rotate(90deg); transition:transform .15s;
+}
+.eaten[open] > summary::after{transform:rotate(-90deg)}
+.eaten > summary .subtot{color:var(--muted); font-weight:600; font-size:13px}
+.eaten-body{
+  margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+  overflow:hidden; box-shadow:0 1px 2px rgba(60,50,30,.04);
+}
+.eaten-slot{padding:10px 16px 8px}
+.eaten-slot + .eaten-slot{border-top:1px solid var(--hair)}
+.eaten-slot .lbl{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:6px}
+.eaten-meal + .eaten-meal{margin-top:8px; padding-top:8px; border-top:1px dashed var(--hair)}
+.eaten-meal .mt{font-weight:650; font-size:14.5px}
+.eaten-meal .ms{font-size:12px; color:var(--muted); margin:1px 0 4px}
+.eaten-meal .row{display:flex; justify-content:space-between; gap:10px; font-size:14px; padding:2px 0}
+.eaten-meal .row .nm{color:var(--text)}
+.eaten-meal .row .kc{color:var(--muted); font-size:13px; white-space:nowrap; font-variant-numeric:tabular-nums}
+.eaten-meal .tot{display:flex; justify-content:space-between; gap:10px; margin-top:4px; padding-top:4px;
+  font-size:12.5px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums}
+
 /* segmented control */
 .segwrap{position:sticky; top:0; z-index:10; padding:8px 0 14px; margin:0 -16px; padding-left:16px; padding-right:16px;
   background:rgba(247,245,240,.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
@@ -135,6 +166,10 @@ nav button.active{color:var(--accent)}
     </div>
     <p class="stat" id="tally-stat"><span id="tally-when"></span><span id="tally-used">0</span> / <span id="tally-goal">1.900</span> · <span class="left" id="tally-left">1.900 over</span></p>
     <p class="comp" id="tally-comp"></p>
+    <details class="eaten" id="eaten-panel" open>
+      <summary><span id="eaten-title">Vandaag gegeten</span> · <span class="subtot" id="eaten-total"></span></summary>
+      <div class="eaten-body" id="eaten-body"></div>
+    </details>
     <div id="food-body"></div>
   </section>
 
@@ -168,13 +203,13 @@ const fmt = (n, d=1) => n == null ? '–' : Number(n).toLocaleString('nl-NL', {m
 /* ---------- recepten ---------- */
 const MEAL_TABS = [
   { label: 'Ontbijt', nums: [1], slot: 'ontbijt' },
-  { label: 'Tussendoortje', nums: [5], slot: 'tussen-1' },
+  { label: 'Tussen', nums: [5], slot: 'tussen-1' },
   { label: 'Lunch', nums: [2], slot: 'lunch' },
-  { label: 'Tussendoortje', nums: [5], slot: 'tussen-2' },
+  { label: 'Tussen', nums: [5], slot: 'tussen-2' },
   { label: 'Diner', nums: [3], slot: 'diner' },
   { label: 'Toetje', nums: [4], slot: 'toetje' },
 ];
-const FALLBACK = { 1: 'Ontbijt', 2: 'Lunch', 3: 'Diner', 4: 'Toetje', 5: 'Tussendoortje' };
+const FALLBACK = { 1: 'Ontbijt', 2: 'Lunch', 3: 'Diner', 4: 'Toetje', 5: 'Tussen' };
 const GENERIC = /^(ontbijt|middag(eten)?|lunch|diner|avond( ?eten)?|toetje|tussendoor(tjes)?)$/i;
 const DAY_KCAL = 1900;
 const STORE = 'fit42-week';
@@ -257,6 +292,73 @@ function dayKcal(map) {
   if (!map) return 0;
   return Math.round(META.reduce((s, it) => s + (map[it.key] ? it.kcal : 0), 0));
 }
+
+function eatenGroups(map) {
+  if (!map || !Object.keys(map).length) return [];
+  const tussIdx = {};
+  return MEAL_TABS.map(tab => {
+    const meals = new Map();
+    DATA.voeding.forEach((plan, pi) => {
+      tab.nums.forEach(n => {
+        const m = plan.meals.find(x => x.num === n);
+        if (!m) return;
+        const mealKey = `${pi + 1}-${n}`;
+        m.items.forEach((it, i) => {
+          const key = itemKey(pi + 1, m.num, i, tab.slot);
+          if (!map[key]) return;
+          if (!meals.has(mealKey)) {
+            const parts = (m.title || '').split(' · ').map(p => p.trim()).filter(p => p && !GENERIC.test(p));
+            const title = parts.shift() || tab.label || FALLBACK[m.num];
+            const sub = ['Schema ' + (pi + 1), ...parts].join(' · ');
+            meals.set(mealKey, { title, sub, kcal: 0, items: [] });
+          }
+          const g = meals.get(mealKey);
+          g.items.push({
+            product: it.product,
+            qty: it.qty,
+            unit: it.unit,
+            kcal: it.kcal || 0,
+          });
+          g.kcal += it.kcal || 0;
+        });
+      });
+    });
+    if (!meals.size) return null;
+    let label = tab.label;
+    if (/^Tussen$/i.test(label)) {
+      tussIdx[label] = (tussIdx[label] || 0) + 1;
+      if (tussIdx[label] > 1) label += ' ' + tussIdx[label];
+    }
+    return { label, meals: [...meals.values()] };
+  }).filter(Boolean);
+}
+
+function updateEatenPanel() {
+  const panel = $('#eaten-panel');
+  const groups = eatenGroups(eaten);
+  const total = dayKcal(eaten);
+  const open = panel.open;
+  panel.classList.toggle('has', groups.length > 0);
+  if (!groups.length) return;
+  $('#eaten-title').textContent = viewIso === TODAY ? 'Vandaag gegeten' : dayLabel(viewIso) + ' · gegeten';
+  $('#eaten-total').textContent = fmt(total, 0) + ' kcal';
+  $('#eaten-body').innerHTML = groups.map(slot => `
+    <div class="eaten-slot">
+      <div class="lbl">${esc(slot.label)}</div>
+      ${slot.meals.map(meal => `
+        <div class="eaten-meal">
+          <div class="mt">${esc(meal.title)}</div>
+          <div class="ms">${esc(meal.sub)}</div>
+          ${meal.items.map(it => `
+            <div class="row">
+              <span class="nm">${esc(it.product)}${it.qty != null ? ` · ${fmt(it.qty, 1)}\u00a0${esc(it.unit || 'x')}` : ''}</span>
+              <span class="kc">${fmt(it.kcal, 0)}</span>
+            </div>`).join('')}
+          <div class="tot"><span>subtotaal</span><span>${fmt(meal.kcal, 0)} kcal</span></div>
+        </div>`).join('')}
+    </div>`).join('');
+  panel.open = open;
+}
 function dayLogged(map) {
   return map && Object.keys(map).length > 0;
 }
@@ -305,6 +407,7 @@ function updateTally() {
     ].filter(Boolean).join(' ');
     return `<div class="d ${cls}" data-iso="${iso}"><span class="dl">${DAYS[dt.getDay()]}</span><span class="dv">${k == null ? '–' : fmt(Math.round(k/100)/10, 1)}</span></div>`;
   }).join('');
+  updateEatenPanel();
 }
 
 function updateMealCard(card) {
@@ -381,10 +484,12 @@ function renderFood() {
         saveEaten();
         updateMealCard(card);
         updateTally();
+        updateEatenPanel();
       });
     });
   });
   updateTally();
+  updateEatenPanel();
 }
 
 /* ---------- zoeken ---------- */
