@@ -69,6 +69,31 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
 .eaten-meal .tot{display:flex; justify-content:space-between; gap:10px; margin-top:4px; padding-top:4px;
   font-size:12.5px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums}
 
+.extra{
+  margin:0 0 12px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 16px; box-shadow:0 1px 2px rgba(60,50,30,.04);
+}
+.extra-head{font-weight:750; font-size:15px; margin-bottom:10px}
+.extra-form{display:flex; gap:8px; align-items:center}
+.extra-form input[type=text]{flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+  background:#fff; color:var(--text); font-size:16px; font-family:inherit; outline:none}
+.extra-form input[type=number]{width:5.5rem; flex:0 0 auto; padding:10px 10px; border-radius:10px; border:1px solid var(--line);
+  background:#fff; color:var(--text); font-size:16px; font-family:inherit; outline:none; font-variant-numeric:tabular-nums}
+.extra-form input::placeholder{color:#b8b0a4}
+.extra-form button{
+  flex:0 0 auto; width:40px; height:40px; border:0; border-radius:10px; background:var(--accent); color:#fff;
+  font-size:22px; font-weight:700; line-height:1; font-family:inherit; position:relative;
+}
+.extra-list{margin-top:8px}
+.extra-row{display:flex; align-items:center; gap:10px; padding:7px 0; font-size:14px}
+.extra-row + .extra-row{border-top:1px solid var(--hair)}
+.extra-row .extra-nm{flex:1; min-width:0}
+.extra-row .extra-kc{color:var(--muted); font-size:13px; white-space:nowrap; font-variant-numeric:tabular-nums}
+.extra-row .extra-del{
+  border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:2px 4px;
+  font-family:inherit; position:relative;
+}
+
 /* segmented control */
 .segwrap{position:sticky; top:0; z-index:10; padding:8px 0 14px; margin:0 -16px; padding-left:16px; padding-right:16px;
   background:rgba(247,245,240,.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
@@ -172,6 +197,15 @@ nav button.active{color:var(--accent)}
     </div>
     <p class="stat" id="tally-stat"><span id="tally-when"></span><span id="tally-used">0</span> / <span id="tally-goal">1.900</span> · <span class="left" id="tally-left">1.900 over</span></p>
     <p class="comp" id="tally-comp"></p>
+    <div class="extra" id="extra-panel">
+      <div class="extra-head">Overig gegeten</div>
+      <div class="extra-form">
+        <input type="text" id="extra-note" placeholder="bijv. koekje, wijn…" autocomplete="off">
+        <input type="number" id="extra-kcal" inputmode="numeric" min="1" step="1" placeholder="kcal" autocomplete="off">
+        <button type="button" id="extra-add" aria-label="Toevoegen">+</button>
+      </div>
+      <div class="extra-list" id="extra-list"></div>
+    </div>
     <details class="eaten" id="eaten-panel" open>
       <summary><span id="eaten-title">Vandaag gegeten</span> · <span class="subtot" id="eaten-total"></span></summary>
       <div class="eaten-body" id="eaten-body"></div>
@@ -321,6 +355,7 @@ function setView(iso) {
   viewIso = iso;
   if (!week[viewIso]) week[viewIso] = {};
   eaten = week[viewIso];
+  renderExtraPanel();
 }
 function saveEaten() {
   week[viewIso] = eaten;
@@ -332,6 +367,14 @@ function dayLabel(iso) {
   return `${DAYS[dt.getDay()]} ${d} ${MONTHS[m - 1]}`;
 }
 const itemKey = (schema, num, i, slot) => `${slot}-${schema}-${num}-${i}`;
+const EXTRA_KEY = '__extras';
+
+function getExtras(map) {
+  return map && Array.isArray(map[EXTRA_KEY]) ? map[EXTRA_KEY] : [];
+}
+function extraKcal(map) {
+  return getExtras(map).reduce((s, e) => s + (Number(e.kcal) || 0), 0);
+}
 
 function itemMeta() {
   const out = [];
@@ -353,7 +396,8 @@ const META = itemMeta();
 
 function dayKcal(map) {
   if (!map) return 0;
-  return Math.round(META.reduce((s, it) => s + (map[it.key] ? it.kcal : 0), 0));
+  const recipe = Math.round(META.reduce((s, it) => s + (map[it.key] ? it.kcal : 0), 0));
+  return recipe + extraKcal(map);
 }
 
 function eatenGroups(map) {
@@ -399,12 +443,23 @@ function eatenGroups(map) {
 function updateEatenPanel() {
   const panel = $('#eaten-panel');
   const groups = eatenGroups(eaten);
+  const extras = getExtras(eaten);
   const total = dayKcal(eaten);
   const open = panel.open;
-  panel.classList.toggle('has', groups.length > 0);
-  if (!groups.length) return;
+  panel.classList.toggle('has', groups.length > 0 || extras.length > 0);
+  if (!groups.length && !extras.length) return;
   $('#eaten-title').textContent = viewIso === TODAY ? 'Vandaag gegeten' : dayLabel(viewIso) + ' · gegeten';
   $('#eaten-total').textContent = fmt(total, 0) + ' kcal';
+  const extraBlock = extras.length ? `
+    <div class="eaten-slot">
+      <div class="lbl">Overig</div>
+      ${extras.map(e => `
+        <div class="row">
+          <span class="nm">${esc(e.note) || 'Overig'}</span>
+          <span class="kc">${fmt(e.kcal, 0)}</span>
+        </div>`).join('')}
+      <div class="tot"><span>subtotaal</span><span>${fmt(extraKcal(eaten), 0)} kcal</span></div>
+    </div>` : '';
   $('#eaten-body').innerHTML = groups.map(slot => `
     <div class="eaten-slot">
       <div class="lbl">${esc(slot.label)}</div>
@@ -419,11 +474,53 @@ function updateEatenPanel() {
             </div>`).join('')}
           <div class="tot"><span>subtotaal</span><span>${fmt(meal.kcal, 0)} kcal</span></div>
         </div>`).join('')}
-    </div>`).join('');
+    </div>`).join('') + extraBlock;
   panel.open = open;
 }
 function dayLogged(map) {
-  return map && Object.keys(map).length > 0;
+  if (!map) return false;
+  if (getExtras(map).length) return true;
+  return META.some(it => map[it.key]);
+}
+
+function renderExtraPanel() {
+  const extras = getExtras(eaten);
+  $('#extra-list').innerHTML = extras.length ? extras.map((e, i) => `
+    <div class="extra-row">
+      <span class="extra-nm">${esc(e.note) || 'Overig'}</span>
+      <span class="extra-kc">${fmt(e.kcal, 0)} kcal</span>
+      <button type="button" class="extra-del" data-i="${i}" aria-label="Verwijderen">×</button>
+    </div>`).join('') : '';
+  $('#extra-list').querySelectorAll('.extra-del').forEach(btn => {
+    if (btn.dataset.haptic) return;
+    bindHaptic(btn, () => removeExtra(+btn.dataset.i));
+  });
+}
+function addExtra(note, kcal) {
+  const n = Math.round(Number(kcal));
+  if (!n || n <= 0) return;
+  if (!Array.isArray(eaten[EXTRA_KEY])) eaten[EXTRA_KEY] = [];
+  eaten[EXTRA_KEY].push({ note: String(note || '').trim(), kcal: n });
+  saveEaten();
+  renderExtraPanel();
+  updateTally();
+  updateEatenPanel();
+}
+function removeExtra(i) {
+  if (!Array.isArray(eaten[EXTRA_KEY])) return;
+  eaten[EXTRA_KEY].splice(i, 1);
+  if (!eaten[EXTRA_KEY].length) delete eaten[EXTRA_KEY];
+  saveEaten();
+  renderExtraPanel();
+  updateTally();
+  updateEatenPanel();
+}
+function submitExtra() {
+  const kcal = $('#extra-kcal').value;
+  if (!kcal || +kcal <= 0) { $('#extra-kcal').focus(); return; }
+  addExtra($('#extra-note').value, kcal);
+  $('#extra-note').value = '';
+  $('#extra-kcal').value = '';
 }
 
 function dayTarget(iso) {
@@ -596,9 +693,15 @@ document.querySelectorAll('nav button').forEach(btn => {
 bindHaptic($('#tally-reset'), () => {
   eaten = {};
   saveEaten();
+  renderExtraPanel();
   renderFood();
 });
 
+bindHaptic($('#extra-add'), submitExtra);
+$('#extra-kcal').addEventListener('keydown', e => { if (e.key === 'Enter') submitExtra(); });
+$('#extra-note').addEventListener('keydown', e => { if (e.key === 'Enter') submitExtra(); });
+
+renderExtraPanel();
 renderFood(); renderSearch();
 </script>
 </body>
