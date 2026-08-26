@@ -310,8 +310,13 @@ const FALLBACK = { 1: 'Ontbijt', 2: 'Lunch', 3: 'Diner', 4: 'Toetje', 5: 'Tussen
 const GENERIC = /^(ontbijt|middag(eten)?|lunch|diner|avond( ?eten)?|toetje|tussendoor(tjes)?)$/i;
 const DAY_KCAL = 1900;
 const STORE = 'fit42-week';
+const SYNC_API = '/api/week';
+const SYNC_POLL_MS = 4000;
 const DAYS = ['zo','ma','di','wo','do','vr','za'];
 let curMeal = 0;
+let syncUpdatedAt = 0;
+let pushTimer = null;
+let pushing = false;
 
 function isoDate(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -327,7 +332,11 @@ function lastDays(n) {
 
 function loadWeek() {
   let days = {};
-  try { days = JSON.parse(localStorage.getItem(STORE) || '{}').days || {}; } catch {}
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE) || '{}');
+    days = raw.days || {};
+    syncUpdatedAt = Number(raw.updatedAt) || 0;
+  } catch {}
   // oude per-dag keys meenemen
   lastDays(7).forEach(iso => {
     const old = localStorage.getItem('fit42-' + iso);
@@ -339,10 +348,77 @@ function loadWeek() {
   Object.keys(days).forEach(k => { if (!keep.has(k)) delete days[k]; });
   return days;
 }
+function persistLocal() {
+  localStorage.setItem(STORE, JSON.stringify({ days: week, updatedAt: syncUpdatedAt }));
+}
 function saveWeek() {
   const keep = new Set(lastDays(7));
   Object.keys(week).forEach(k => { if (!keep.has(k)) delete week[k]; });
-  localStorage.setItem(STORE, JSON.stringify({ days: week }));
+  persistLocal();
+  schedulePush();
+}
+function applyRemoteDays(days, updatedAt) {
+  const keep = new Set(lastDays(7));
+  Object.keys(week).forEach(k => delete week[k]);
+  Object.entries(days || {}).forEach(([iso, map]) => {
+    if (keep.has(iso)) week[iso] = map;
+  });
+  syncUpdatedAt = Number(updatedAt) || 0;
+  if (!week[viewIso]) week[viewIso] = {};
+  eaten = week[viewIso];
+  persistLocal();
+  renderExtraPanel();
+  renderFood();
+}
+async function pullRemote() {
+  try {
+    const r = await fetch(SYNC_API, { cache: 'no-store' });
+    if (!r.ok) return;
+    const data = await r.json();
+    const remoteTs = Number(data.updatedAt) || 0;
+    if (remoteTs > syncUpdatedAt) {
+      applyRemoteDays(data.days, data.updatedAt);
+    } else if (remoteTs === 0 && syncUpdatedAt === 0 && Object.keys(week).some(iso => dayLogged(week[iso]))) {
+      schedulePush();
+    }
+  } catch {}
+}
+function schedulePush() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushRemote, 350);
+}
+async function pushRemote() {
+  if (pushing) return;
+  pushing = true;
+  try {
+    const keep = new Set(lastDays(7));
+    Object.keys(week).forEach(k => { if (!keep.has(k)) delete week[k]; });
+    const r = await fetch(SYNC_API, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: week, updatedAt: syncUpdatedAt }),
+    });
+    if (r.status === 409) {
+      const data = await r.json();
+      applyRemoteDays(data.days, data.updatedAt);
+      return;
+    }
+    if (!r.ok) return;
+    const data = await r.json();
+    syncUpdatedAt = Number(data.updatedAt) || syncUpdatedAt;
+    persistLocal();
+  } catch {} finally {
+    pushing = false;
+  }
+}
+function startSync() {
+  pullRemote();
+  setInterval(() => {
+    if (document.visibilityState === 'visible') pullRemote();
+  }, SYNC_POLL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pullRemote();
+  });
 }
 
 const week = loadWeek();
@@ -703,6 +779,7 @@ $('#extra-note').addEventListener('keydown', e => { if (e.key === 'Enter') submi
 
 renderExtraPanel();
 renderFood(); renderSearch();
+startSync();
 </script>
 </body>
 </html>

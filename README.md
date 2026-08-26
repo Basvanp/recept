@@ -89,7 +89,17 @@ build.py       optioneel: recepten opnieuw uit een .ods halen
 vercel.json    Framework Other, skip install/build
 ```
 
-Data zit in `<script id="fitdata">`. Weeklog in `localStorage` onder `fit42-week`. Ander domein = lege week — dat is normaal.
+Data zit in `<script id="fitdata">`. Weeklog in `localStorage` onder `fit42-week` én gedeeld via **Upstash Redis** (`/api/week`). Zonder Redis werkt de app nog steeds lokaal; sync faalt dan stilletjes.
+
+### Redis koppelen (Vercel)
+
+1. Vercel dashboard → project → **Storage** / **Marketplace** → **Upstash Redis** → Install
+2. Maak of koppel een database; env vars worden automatisch gezet (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — oude KV-vars werken ook)
+3. Redeploy
+
+iPhone A vinkt aan → push naar Redis. iPhone B pollt elke 4 s (of bij terugkeren naar tab) en ziet de update. Bij gelijktijdig wijzigen wint de nieuwste versie; de andere krijgt de serverstate terug.
+
+Lokaal testen met sync: `npx vercel dev` (niet `python -m http.server` — die heeft geen `/api`).
 
 ## Lokaal
 

@@ -2,5 +2,6 @@ node_modules/
 *.ods
 .DS_Store
 .vercel
-package.json
 package-lock.json
+.env
+.env*.local
