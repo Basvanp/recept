@@ -1,5 +1,4 @@
 node_modules
 *.ods
-package.json
 package-lock.json
 build.py
