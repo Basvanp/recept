@@ -29,14 +29,46 @@ main{max-width:560px; margin:0 auto; padding:calc(18px + env(safe-area-inset-top
 
 h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
 .hero{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
+.hero-actions{display:flex; align-items:baseline; gap:14px; flex-shrink:0}
 .hero button{border:0; background:none; color:var(--muted); font:inherit; font-size:14px; font-weight:600; padding:4px 0; position:relative}
 .hero button.haptic-armed{min-width:3.5em; min-height:1.5em}
+#tally-undo{color:var(--accent); font-weight:700}
+#tally-undo[hidden]{display:none !important}
 .stat{font-weight:750; font-size:16px; margin:6px 0 2px; font-variant-numeric:tabular-nums}
 .stat .left{color:var(--accent)}
 .stat .left.over{color:#b42318}
 .comp{font-size:12.5px; color:var(--muted); margin:0 0 14px}
 .comp:empty{display:none; margin:0}
 .sub{color:var(--muted); font-size:14.5px; margin:2px 0 16px}
+
+.dayplan{margin:0 0 12px}
+.dayplan > summary{
+  list-style:none; cursor:pointer; user-select:none; -webkit-user-select:none;
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 16px; font-weight:750; font-size:15px;
+  box-shadow:0 1px 2px rgba(60,50,30,.04);
+}
+.dayplan > summary::-webkit-details-marker{display:none}
+.dayplan > summary::after{
+  content:'›'; float:right; color:var(--muted); font-size:18px; line-height:1;
+  transform:rotate(90deg); transition:transform .15s;
+}
+.dayplan[open] > summary::after{transform:rotate(-90deg)}
+.dayplan > summary .subtot{color:var(--muted); font-weight:600; font-size:13px}
+.dayplan-body{
+  margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+  overflow:hidden; box-shadow:0 1px 2px rgba(60,50,30,.04);
+}
+.dayplan-row{
+  display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  padding:11px 16px; font-size:14.5px; cursor:pointer; position:relative;
+}
+.dayplan-row + .dayplan-row{border-top:1px solid var(--hair)}
+.dayplan-row .lbl{font-weight:650; flex:1; min-width:0}
+.dayplan-row .pick-nm{color:var(--muted); font-size:13px; flex:1.4; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.dayplan-row .st{font-size:13px; font-weight:650; white-space:nowrap; font-variant-numeric:tabular-nums}
+.dayplan-row .st.ok{color:var(--accent)}
+.dayplan-row .st.muted{color:var(--muted)}
 
 .eaten{margin:0 0 12px}
 .eaten:not(.has){display:none}
@@ -103,15 +135,26 @@ h1{font-size:30px; font-weight:800; letter-spacing:-.4px}
   padding:8px 13px; border-radius:99px; font-family:inherit; position:relative}
 .seg button.active{background:#fff; color:var(--text); font-weight:700; box-shadow:0 1px 4px rgba(60,50,30,.16)}
 
+.pickwrap{padding:0 0 12px}
+.pick{display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:1px}
+.pick::-webkit-scrollbar{display:none}
+.pick button{flex:0 0 auto; border:0; background:#e9e5db; color:#6d675b; font-weight:600; font-size:12.5px;
+  padding:7px 11px; border-radius:99px; font-family:inherit; position:relative; white-space:nowrap}
+.pick button.active{background:#fff; color:var(--text); font-weight:700; box-shadow:0 1px 4px rgba(60,50,30,.16)}
+
 .tip{font-size:13px; color:var(--muted); margin:14px 2px 20px; text-align:center}
 
 /* maaltijden */
 .meal{background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:14px;
   overflow:hidden; box-shadow:0 1px 2px rgba(60,50,30,.04)}
 .meal .head{padding:13px 16px 11px; display:flex; justify-content:space-between; align-items:baseline; gap:10px}
-.meal .head .t{font-weight:750; font-size:17px}
+.meal .head .t{font-weight:750; font-size:17px; min-width:0}
 .meal .head .t::first-letter{text-transform:uppercase}
+.meal .head-right{display:flex; align-items:baseline; gap:8px; flex-shrink:0}
 .meal .head .kc{color:var(--muted); font-size:14px; white-space:nowrap}
+.meal .all-btn{border:0; background:#e9e5db; color:var(--text); font-weight:650; font-size:13px;
+  padding:5px 10px; border-radius:8px; font-family:inherit; position:relative; white-space:nowrap}
+.meal .all-btn.on{background:var(--accent); color:#fff}
 .meal .head-sub{padding:0 16px 10px; margin-top:-8px; font-size:12.5px; color:var(--muted)}
 .meal .head-sub::first-letter{text-transform:uppercase}
 .meal table{width:100%; border-collapse:collapse; font-size:16px}
@@ -185,6 +228,28 @@ nav button.active{color:var(--accent)}
   position:absolute; inset:0; width:100%; height:100%;
   opacity:0; margin:0; z-index:2; cursor:pointer;
 }
+
+.dlg-back{
+  position:fixed; inset:0; z-index:60;
+  background:rgba(38,36,31,.38);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+.dlg-back[hidden]{display:none !important}
+.dlg{
+  background:#fff; border-radius:16px; padding:20px 18px 14px;
+  max-width:300px; width:100%;
+  box-shadow:0 12px 40px rgba(38,36,31,.22);
+}
+.dlg h2{font-size:17px; font-weight:750; letter-spacing:-.2px; margin:0 0 6px}
+.dlg p{font-size:14.5px; color:var(--muted); margin:0 0 16px; line-height:1.4}
+.dlg-actions{display:flex; gap:8px}
+.dlg-actions button{
+  flex:1; padding:11px 10px; border:0; border-radius:10px;
+  font:inherit; font-size:15px; font-weight:650; position:relative;
+}
+.dlg-no{background:#e9e5db; color:var(--text)}
+.dlg-yes{background:var(--accent); color:#fff}
 </style>
 </head>
 <body>
@@ -193,10 +258,17 @@ nav button.active{color:var(--accent)}
   <section class="page active" id="page-food">
     <div class="hero">
       <h1>Marthes' recepten</h1>
-      <button type="button" id="tally-reset">wissen</button>
+      <div class="hero-actions">
+        <button type="button" id="tally-undo" hidden>Ongedaan</button>
+        <button type="button" id="tally-reset">wissen</button>
+      </div>
     </div>
     <p class="stat" id="tally-stat"><span id="tally-when"></span><span id="tally-used">0</span> / <span id="tally-goal">1.900</span> · <span class="left" id="tally-left">1.900 over</span></p>
     <p class="comp" id="tally-comp"></p>
+    <details class="dayplan" id="day-plan">
+      <summary><span id="day-plan-title">Vandaag</span> · <span class="subtot" id="day-plan-total"></span></summary>
+      <div class="dayplan-body" id="day-plan-body"></div>
+    </details>
     <div class="extra" id="extra-panel">
       <div class="extra-head">Overig gegeten</div>
       <div class="extra-form">
@@ -222,6 +294,17 @@ nav button.active{color:var(--accent)}
 
 <div class="tally" id="tally">
   <div class="week" id="week"></div>
+</div>
+
+<div id="confirm" class="dlg-back" hidden inert aria-hidden="true">
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h2 id="confirm-title">Weet je het zeker?</h2>
+    <p id="confirm-msg"></p>
+    <div class="dlg-actions">
+      <button type="button" id="confirm-no" class="dlg-no">Annuleer</button>
+      <button type="button" id="confirm-yes" class="dlg-yes">Wissen</button>
+    </div>
+  </div>
 </div>
 
 <nav id="tabs">
@@ -312,11 +395,16 @@ const DAY_KCAL = 1900;
 const STORE = 'fit42-week';
 const SYNC_API = '/api/week';
 const SYNC_POLL_MS = 4000;
+const UNDO_MS = 6000;
 const DAYS = ['zo','ma','di','wo','do','vr','za'];
 let curMeal = 0;
 let syncUpdatedAt = 0;
 let pushTimer = null;
 let pushing = false;
+let undo = null;
+let undoTimer = null;
+let undoGen = 0;
+let confirmResolve = null;
 
 function isoDate(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -351,13 +439,53 @@ function loadWeek() {
 function persistLocal() {
   localStorage.setItem(STORE, JSON.stringify({ days: week, updatedAt: syncUpdatedAt }));
 }
+function cloneDay(map) {
+  try { return JSON.parse(JSON.stringify(map || {})); } catch { return {}; }
+}
+function dropUndo() {
+  undoGen++;
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  undo = null;
+  const btn = $('#tally-undo');
+  if (btn) btn.hidden = true;
+}
+function armUndo(iso, snapshot) {
+  const gen = ++undoGen;
+  clearTimeout(undoTimer);
+  undo = { iso, snapshot, gen };
+  const btn = $('#tally-undo');
+  if (btn) btn.hidden = false;
+  undoTimer = setTimeout(() => {
+    if (!undo || undo.gen !== gen) return;
+    undo = null;
+    if (btn) btn.hidden = true;
+    schedulePush();
+  }, UNDO_MS);
+}
+function applyUndo() {
+  if (!undo) return;
+  const { iso, snapshot } = undo;
+  dropUndo();
+  week[iso] = snapshot;
+  if (!week[viewIso]) week[viewIso] = {};
+  eaten = week[viewIso];
+  saveWeek();
+  renderExtraPanel();
+  renderFood();
+}
 function saveWeek() {
   const keep = new Set(lastDays(7));
   Object.keys(week).forEach(k => { if (!keep.has(k)) delete week[k]; });
   persistLocal();
+  if (undo) {
+    clearTimeout(pushTimer);
+    return;
+  }
   schedulePush();
 }
 function applyRemoteDays(days, updatedAt) {
+  dropUndo();
   const keep = new Set(lastDays(7));
   Object.keys(week).forEach(k => delete week[k]);
   Object.entries(days || {}).forEach(([iso, map]) => {
@@ -378,7 +506,7 @@ async function pullRemote() {
     const remoteTs = Number(data.updatedAt) || 0;
     if (remoteTs > syncUpdatedAt) {
       applyRemoteDays(data.days, data.updatedAt);
-    } else if (remoteTs === 0 && syncUpdatedAt === 0 && Object.keys(week).some(iso => dayLogged(week[iso]))) {
+    } else if (!undo && remoteTs === 0 && syncUpdatedAt === 0 && Object.keys(week).some(iso => dayLogged(week[iso]))) {
       schedulePush();
     }
   } catch {}
@@ -411,6 +539,10 @@ async function pushRemote() {
     pushing = false;
   }
 }
+function flushPush() {
+  clearTimeout(pushTimer);
+  pushRemote();
+}
 function startSync() {
   pullRemote();
   setInterval(() => {
@@ -418,7 +550,9 @@ function startSync() {
   }, SYNC_POLL_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') pullRemote();
+    else flushPush();
   });
+  window.addEventListener('pagehide', flushPush);
 }
 
 const week = loadWeek();
@@ -444,6 +578,152 @@ function dayLabel(iso) {
 }
 const itemKey = (schema, num, i, slot) => `${slot}-${schema}-${num}-${i}`;
 const EXTRA_KEY = '__extras';
+const PICK_KEY = '__pick';
+
+function getPicks(map) {
+  return map && map[PICK_KEY] && typeof map[PICK_KEY] === 'object' ? map[PICK_KEY] : {};
+}
+function inferPickFromChecks(map, slot) {
+  if (!map) return null;
+  const prefix = slot + '-';
+  for (const k of Object.keys(map)) {
+    if (!map[k] || !k.startsWith(prefix)) continue;
+    const schema = +k.split('-')[1];
+    if (schema) return schema;
+  }
+  return null;
+}
+function getPick(map, slot, tab) {
+  const saved = getPicks(map)[slot];
+  if (saved && tabOptions(tab).some(o => o.schema === +saved)) return +saved;
+  const inferred = inferPickFromChecks(map, slot);
+  if (inferred && tabOptions(tab).some(o => o.schema === inferred)) return inferred;
+  const opts = tabOptions(tab);
+  return opts.length ? opts[0].schema : 1;
+}
+function setPick(slot, schema) {
+  if (!eaten[PICK_KEY]) eaten[PICK_KEY] = {};
+  eaten[PICK_KEY][slot] = schema;
+}
+function slotHasOtherChecks(map, slot, schema) {
+  if (!map) return false;
+  const prefix = slot + '-';
+  return Object.keys(map).some(k => {
+    if (!map[k] || !k.startsWith(prefix)) return false;
+    return +k.split('-')[1] !== schema;
+  });
+}
+function slotHasChecks(map, slot, schema) {
+  if (!map) return false;
+  const prefix = slot + '-';
+  return Object.keys(map).some(k => {
+    if (!map[k] || !k.startsWith(prefix)) return false;
+    if (schema != null && +k.split('-')[1] !== schema) return false;
+    return true;
+  });
+}
+function clearSlotExcept(map, slot, keepSchema) {
+  const prefix = slot + '-';
+  Object.keys(map).forEach(k => {
+    if (k === EXTRA_KEY || k === PICK_KEY) return;
+    if (!k.startsWith(prefix)) return;
+    if (+k.split('-')[1] !== keepSchema) delete map[k];
+  });
+}
+function findMeal(schema, tab) {
+  const plan = DATA.voeding[schema - 1];
+  if (!plan) return null;
+  for (const n of tab.nums) {
+    const m = plan.meals.find(x => x.num === n);
+    if (m) return m;
+  }
+  return null;
+}
+function mealTitle(meal, tab) {
+  const parts = (meal.title || '').split(' · ').map(p => p.trim()).filter(p => p && !GENERIC.test(p));
+  return parts.shift() || tab.label || FALLBACK[meal.num];
+}
+function mealChipLabel(meal, tab) {
+  const t = mealTitle(meal, tab);
+  return t.length > 16 ? t.slice(0, 15) + '…' : t;
+}
+function tabOptions(tab) {
+  const opts = [1, 2, 3].map(schema => {
+    const meal = findMeal(schema, tab);
+    return meal ? { schema, meal } : null;
+  }).filter(Boolean);
+  if (tab.slot === 'lunch') {
+    const m4 = findMeal(4, tab);
+    if (m4) opts.push({ schema: 4, meal: m4 });
+  }
+  if (tab.slot === 'diner') {
+    const m5 = findMeal(5, tab);
+    if (m5) opts.push({ schema: 5, meal: m5 });
+  }
+  return opts;
+}
+function applyPick(slot, schema, tab) {
+  clearSlotExcept(eaten, slot, schema);
+  setPick(slot, schema);
+}
+async function choosePick(slot, schema, tab) {
+  const cur = getPick(eaten, slot, tab);
+  if (schema === cur) return;
+  if (slotHasOtherChecks(eaten, slot, schema)) {
+    const ok = await askConfirm('Wisselen wist je huidige keuzes voor deze maaltijd.');
+    if (!ok) return;
+  }
+  armUndo(viewIso, cloneDay(eaten));
+  applyPick(slot, schema, tab);
+  saveEaten();
+  renderFood();
+}
+function toggleAllMeal(card, schema, tab) {
+  const rows = [...card.querySelectorAll('tr.item')];
+  const allOn = rows.length && rows.every(r => eaten[r.dataset.key]);
+  armUndo(viewIso, cloneDay(eaten));
+  applyPick(tab.slot, schema, tab);
+  rows.forEach(r => {
+    if (allOn) delete eaten[r.dataset.key];
+    else eaten[r.dataset.key] = 1;
+  });
+  saveEaten();
+  updateMealCard(card);
+  const btn = card.querySelector('.all-btn');
+  if (btn) btn.classList.toggle('on', !allOn && rows.some(r => eaten[r.dataset.key]));
+  updateTally();
+  updateEatenPanel();
+}
+function updateDayPlan() {
+  const panel = $('#day-plan');
+  const used = dayKcal(eaten);
+  const target = dayTarget(viewIso);
+  const open = panel.open;
+  $('#day-plan-title').textContent = viewIso === TODAY ? 'Vandaag' : dayLabel(viewIso);
+  $('#day-plan-total').textContent = `${fmt(used, 0)} / ${fmt(target, 0)} kcal`;
+  $('#day-plan-body').innerHTML = MEAL_TABS.map((tab, i) => {
+    const pick = getPick(eaten, tab.slot, tab);
+    const opt = tabOptions(tab).find(o => o.schema === pick);
+    const nm = opt ? mealChipLabel(opt.meal, tab) : '—';
+    let label = tab.label;
+    if (/^Tussen$/i.test(label)) {
+      const n = MEAL_TABS.slice(0, i + 1).filter(t => /^Tussen$/i.test(t.label)).length;
+      if (n > 1) label += ' ' + n;
+    }
+    const logged = slotHasChecks(eaten, tab.slot);
+    const st = logged ? '✓' : '—';
+    const stCls = logged ? 'ok' : 'muted';
+    return `<div class="dayplan-row" data-meal="${i}"><span class="lbl">${esc(label)}</span><span class="pick-nm">${esc(nm)}</span><span class="st ${stCls}">${st}</span></div>`;
+  }).join('');
+  panel.querySelectorAll('.dayplan-row').forEach(row => {
+    bindHaptic(row, () => {
+      curMeal = +row.dataset.meal;
+      renderFood();
+      window.scrollTo({ top: 0 });
+    });
+  });
+  panel.open = open;
+}
 
 function getExtras(map) {
   return map && Array.isArray(map[EXTRA_KEY]) ? map[EXTRA_KEY] : [];
@@ -651,6 +931,7 @@ function updateTally() {
     });
   });
   updateEatenPanel();
+  updateDayPlan();
 }
 
 function updateMealCard(card) {
@@ -680,59 +961,85 @@ function updateMealCard(card) {
 }
 
 function renderFood() {
-  const seg = MEAL_TABS.map((t,i) =>
-    `<button class="${i===curMeal?'active':''}" data-i="${i}">${t.label}</button>`).join('');
+  const seg = MEAL_TABS.map((t, i) =>
+    `<button class="${i === curMeal ? 'active' : ''}" data-i="${i}">${t.label}</button>`).join('');
   const tab = MEAL_TABS[curMeal];
-  const options = tab.nums.flatMap(n =>
-    DATA.voeding.map((plan,pi) => ({ schema: pi + 1, meal: plan.meals.find(m => m.num === n) }))
-      .filter(o => o.meal));
-  const cards = options.map(o => {
-    const m = o.meal;
+  const options = tabOptions(tab);
+  const pick = getPick(eaten, tab.slot, tab);
+  const sel = options.find(o => o.schema === pick) || options[0];
+
+  let card = '';
+  if (sel) {
+    const m = sel.meal;
+    const title = mealTitle(m, tab);
     const parts = (m.title || '').split(' · ').map(p => p.trim()).filter(p => p && !GENERIC.test(p));
-    const title = parts.shift() || tab.label || FALLBACK[m.num];
-    const sub = ['Schema ' + o.schema, ...parts].join(' · ');
+    const sub = parts.join(' · ');
     const planKcal = (m.total && m.total.kcal) || 0;
     const rows = m.items.map((it, i) => {
-      const key = itemKey(o.schema, m.num, i, tab.slot);
+      const key = itemKey(sel.schema, m.num, i, tab.slot);
       const on = !!eaten[key];
-      return `<tr class="item ${on ? 'on' : 'off'}" data-key="${esc(key)}" data-kcal="${it.kcal||0}" data-e="${it.e||0}" data-k="${it.k||0}" data-v="${it.v||0}">
+      return `<tr class="item ${on ? 'on' : 'off'}" data-key="${esc(key)}" data-kcal="${it.kcal || 0}" data-e="${it.e || 0}" data-k="${it.k || 0}" data-v="${it.v || 0}">
         <td class="box"><span class="boxmark"></span></td>
-        <td class="qty">${it.qty != null ? fmt(it.qty,1) + '\u00a0' + esc(it.unit || 'x') : '\u2013'}</td>
+        <td class="qty">${it.qty != null ? fmt(it.qty, 1) + '\u00a0' + esc(it.unit || 'x') : '\u2013'}</td>
         <td class="name">${esc(it.product)}${it.note ? `<span class="inote">${esc(it.note)}</span>` : ''}</td>
-        <td class="kcal">${fmt(it.kcal,0)}</td>
+        <td class="kcal">${fmt(it.kcal, 0)}</td>
       </tr>`;
     }).join('');
-    return `<div class="meal" data-plan="${planKcal}">
+    const allOn = m.items.length && m.items.every((it, i) => eaten[itemKey(sel.schema, m.num, i, tab.slot)]);
+    card = `<div class="meal" data-plan="${planKcal}" data-schema="${sel.schema}">
       <div class="head"><span class="t">${esc(title)}</span>
-        <span class="kc">${fmt(planKcal,0)} kcal</span></div>
-      <div class="head-sub">${esc(sub)}</div>
+        <span class="head-right"><span class="kc">${fmt(planKcal, 0)} kcal</span>
+        <button type="button" class="all-btn ${allOn ? 'on' : ''}">Alles</button></span></div>
+      ${sub ? `<div class="head-sub">${esc(sub)}</div>` : ''}
       <table>${rows}</table>
       <div class="foot"></div>
     </div>`;
+  }
+
+  const chips = options.map(o => {
+    const active = o.schema === pick;
+    return `<button type="button" class="${active ? 'active' : ''}" data-schema="${o.schema}">${esc(mealChipLabel(o.meal, tab))}</button>`;
   }).join('');
+
   $('#food-body').innerHTML = `
     <div class="segwrap"><div class="seg">${seg}</div></div>
-    ${cards}
-    <p class="tip">Vink aan wat je eet. Wat je overslaat telt niet mee — dat zie je als over.</p>`;
+    <div class="pickwrap"><div class="pick">${chips}</div></div>
+    ${card}
+    <p class="tip">Kies je recept, vink aan wat je eet. Overslaan telt niet mee.</p>`;
+
   $('#food-body').querySelectorAll('.seg button').forEach(b =>
-    bindHaptic(b, () => { curMeal = +b.dataset.i; renderFood(); window.scrollTo({top:0}); }));
+    bindHaptic(b, () => { curMeal = +b.dataset.i; renderFood(); window.scrollTo({ top: 0 }); }));
   const activeChip = $('#food-body').querySelector('.seg button.active');
   if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
-  $('#food-body').querySelectorAll('.meal').forEach(card => {
-    updateMealCard(card);
-    card.querySelectorAll('tr.item').forEach(row => {
+
+  $('#food-body').querySelectorAll('.pick button').forEach(btn =>
+    bindHaptic(btn, () => choosePick(tab.slot, +btn.dataset.schema, tab)));
+
+  const mealCard = $('#food-body').querySelector('.meal');
+  if (mealCard) {
+    updateMealCard(mealCard);
+    const schema = +mealCard.dataset.schema;
+    bindHaptic(mealCard.querySelector('.all-btn'), () => toggleAllMeal(mealCard, schema, tab));
+    mealCard.querySelectorAll('tr.item').forEach(row => {
       bindHaptic(row, () => {
         const k = row.dataset.key;
-        if (eaten[k]) delete eaten[k]; else eaten[k] = 1;
+        armUndo(viewIso, cloneDay(eaten));
+        if (eaten[k]) delete eaten[k];
+        else {
+          eaten[k] = 1;
+          setPick(tab.slot, schema);
+        }
         saveEaten();
-        updateMealCard(card);
+        updateMealCard(mealCard);
+        const allBtn = mealCard.querySelector('.all-btn');
+        const itemRows = [...mealCard.querySelectorAll('tr.item')];
+        const allOn = itemRows.length && itemRows.every(r => eaten[r.dataset.key]);
+        if (allBtn) allBtn.classList.toggle('on', allOn);
         updateTally();
-        updateEatenPanel();
       });
     });
-  });
+  }
   updateTally();
-  updateEatenPanel();
 }
 
 /* ---------- zoeken ---------- */
@@ -766,12 +1073,40 @@ document.querySelectorAll('nav button').forEach(btn => {
   });
 });
 
+function askConfirm(msg) {
+  if (confirmResolve) return Promise.resolve(false);
+  $('#confirm-msg').textContent = msg;
+  const el = $('#confirm');
+  el.hidden = false;
+  el.inert = false;
+  el.removeAttribute('aria-hidden');
+  return new Promise(resolve => { confirmResolve = resolve; });
+}
+function closeConfirm(ok) {
+  const el = $('#confirm');
+  el.hidden = true;
+  el.inert = true;
+  el.setAttribute('aria-hidden', 'true');
+  const resolve = confirmResolve;
+  confirmResolve = null;
+  if (resolve) resolve(!!ok);
+}
+bindHaptic($('#tally-undo'), applyUndo);
 bindHaptic($('#tally-reset'), () => {
-  eaten = {};
-  saveEaten();
-  renderExtraPanel();
-  renderFood();
+  if (!dayLogged(eaten)) return;
+  const when = viewIso === TODAY ? 'vandaag' : dayLabel(viewIso);
+  askConfirm('Dit wist alles van ' + when + '.').then(ok => {
+    if (!ok) return;
+    armUndo(viewIso, cloneDay(eaten));
+    eaten = {};
+    saveEaten();
+    renderExtraPanel();
+    renderFood();
+  });
 });
+$('#confirm').addEventListener('click', e => { if (e.target.id === 'confirm') closeConfirm(false); });
+bindHaptic($('#confirm-no'), () => closeConfirm(false));
+bindHaptic($('#confirm-yes'), () => closeConfirm(true));
 
 bindHaptic($('#extra-add'), submitExtra);
 $('#extra-kcal').addEventListener('keydown', e => { if (e.key === 'Enter') submitExtra(); });
