@@ -1,10 +1,21 @@
-import { Redis } from '@upstash/redis';
+const { Redis } = require('@upstash/redis');
 
-const redis = Redis.fromEnv();
 const KEY = 'fit42-week';
 
-export default async function handler(req, res) {
+function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
+
+module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+
+  const redis = getRedis();
+  if (!redis) {
+    return res.status(503).json({ error: 'redis_unconfigured' });
+  }
 
   if (req.method === 'GET') {
     try {
@@ -39,4 +50,4 @@ export default async function handler(req, res) {
 
   res.setHeader('Allow', 'GET, PUT');
   return res.status(405).end();
-}
+};
