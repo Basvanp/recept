@@ -639,13 +639,47 @@ function findMeal(schema, tab) {
   }
   return null;
 }
-function mealTitle(meal, tab) {
-  const parts = (meal.title || '').split(' · ').map(p => p.trim()).filter(p => p && !GENERIC.test(p));
-  return parts.shift() || tab.label || FALLBACK[meal.num];
+function tabSegLabel(tab, i) {
+  let label = tab.label;
+  if (/^Tussen$/i.test(label)) {
+    const n = MEAL_TABS.slice(0, i + 1).filter(t => /^Tussen$/i.test(t.label)).length;
+    if (n > 1) label += ' ' + n;
+  }
+  return label;
 }
-function mealChipLabel(meal, tab) {
-  const t = mealTitle(meal, tab);
-  return t.length > 16 ? t.slice(0, 15) + '…' : t;
+function mealNameParts(meal) {
+  return (meal.title || '').split(' · ').map(p => p.trim()).filter(p => p && !GENERIC.test(p));
+}
+function mealShortName(meal, schema) {
+  const items = meal.items || [];
+  if (!items.length) return 'Schema ' + schema;
+  const names = items.slice(0, 2).map(it => {
+    let p = (it.product || '').trim().replace(/\s*\([^)]*\)/g, '').trim();
+    const w = p.split(/[\s/]+/)[0] || p;
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).filter(Boolean);
+  return names.join(' · ') || ('Schema ' + schema);
+}
+function mealTitle(meal, tab, schema) {
+  const parts = mealNameParts(meal);
+  if (parts.length) return parts[0];
+  return mealShortName(meal, schema);
+}
+function mealSubtitle(meal, tab, schema) {
+  const parts = mealNameParts(meal);
+  if (parts.length > 1) return parts.slice(1).join(' · ');
+  return '';
+}
+function mealChipLabel(meal, tab, schema) {
+  const parts = mealNameParts(meal);
+  let label = parts.length >= 2 ? parts.slice(0, 2).join(' · ') : parts[0] || mealShortName(meal, schema);
+  return label.length > 18 ? label.slice(0, 17) + '…' : label;
+}
+function pickChipLabels(options, tab) {
+  const labels = options.map(o => mealChipLabel(o.meal, tab, o.schema));
+  const counts = {};
+  labels.forEach(l => { counts[l] = (counts[l] || 0) + 1; });
+  return options.map((o, i) => counts[labels[i]] > 1 ? o.schema + ' · ' + labels[i] : labels[i]);
 }
 function tabOptions(tab) {
   const opts = [1, 2, 3].map(schema => {
@@ -704,7 +738,7 @@ function updateDayPlan() {
   $('#day-plan-body').innerHTML = MEAL_TABS.map((tab, i) => {
     const pick = getPick(eaten, tab.slot, tab);
     const opt = tabOptions(tab).find(o => o.schema === pick);
-    const nm = opt ? mealChipLabel(opt.meal, tab) : '—';
+    const nm = opt ? mealChipLabel(opt.meal, tab, opt.schema) : '—';
     let label = tab.label;
     if (/^Tussen$/i.test(label)) {
       const n = MEAL_TABS.slice(0, i + 1).filter(t => /^Tussen$/i.test(t.label)).length;
@@ -962,7 +996,7 @@ function updateMealCard(card) {
 
 function renderFood() {
   const seg = MEAL_TABS.map((t, i) =>
-    `<button class="${i === curMeal ? 'active' : ''}" data-i="${i}">${t.label}</button>`).join('');
+    `<button class="${i === curMeal ? 'active' : ''}" data-i="${i}">${tabSegLabel(t, i)}</button>`).join('');
   const tab = MEAL_TABS[curMeal];
   const options = tabOptions(tab);
   const pick = getPick(eaten, tab.slot, tab);
@@ -971,9 +1005,8 @@ function renderFood() {
   let card = '';
   if (sel) {
     const m = sel.meal;
-    const title = mealTitle(m, tab);
-    const parts = (m.title || '').split(' · ').map(p => p.trim()).filter(p => p && !GENERIC.test(p));
-    const sub = parts.join(' · ');
+    const title = mealTitle(m, tab, sel.schema);
+    const sub = mealSubtitle(m, tab, sel.schema);
     const planKcal = (m.total && m.total.kcal) || 0;
     const rows = m.items.map((it, i) => {
       const key = itemKey(sel.schema, m.num, i, tab.slot);
@@ -996,9 +1029,10 @@ function renderFood() {
     </div>`;
   }
 
-  const chips = options.map(o => {
+  const chipLabels = pickChipLabels(options, tab);
+  const chips = options.map((o, i) => {
     const active = o.schema === pick;
-    return `<button type="button" class="${active ? 'active' : ''}" data-schema="${o.schema}">${esc(mealChipLabel(o.meal, tab))}</button>`;
+    return `<button type="button" class="${active ? 'active' : ''}" data-schema="${o.schema}">${esc(chipLabels[i])}</button>`;
   }).join('');
 
   $('#food-body').innerHTML = `
